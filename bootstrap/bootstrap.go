@@ -6,18 +6,21 @@ import (
 	"github.com/binlaniua/sniffer/datastream"
 	"github.com/google/gopacket/tcpassembly"
 	"github.com/google/gopacket/layers"
+	"github.com/binlaniua/sniffer/protocol"
+	"github.com/binlaniua/sniffer/protocol/http"
 )
 
-var _MAX_PACKAGE_SIZE int32 = 1024 * 1024
+var eachPacketSize int32 = 1024 * 1024
 var log = logger.Logger{"bootstrap"}
 var event chan interface{}
+var ps = [...]protocol.Protocol{http.Http{}}
 
 func Start(device string, bpfExp string) {
 	//
 	event = make(chan interface{}, 1024)
 
 	//
-	handle, err := pcap.OpenLive(device, _MAX_PACKAGE_SIZE, true, pcap.BlockForever)
+	handle, err := pcap.OpenLive(device, eachPacketSize, true, pcap.BlockForever)
 	if err != nil {
 		log.Error("开启监听失败[%v]", err)
 	}
@@ -41,14 +44,15 @@ func Start(device string, bpfExp string) {
 
 func doCaptureLoop(packageSource *gopacket.PacketSource) {
 	//
-	dataStream := datastream.TcpDataStreamFactory{event}
+	dataStream := datastream.TcpDataStreamFactory{event, ps[:len(ps)]}
 	streamPool := tcpassembly.NewStreamPool(dataStream)
 	assembler := tcpassembly.NewAssembler(streamPool)
 	log.Debug("构建tcp分析者完成")
 
+
+
 	//
 	for packet := range packageSource.Packets() {
-		log.Debug("数据包街获取")
 		netLayer := packet.NetworkLayer()
 		if netLayer == nil {
 			continue
@@ -59,7 +63,7 @@ func doCaptureLoop(packageSource *gopacket.PacketSource) {
 		}
 		tcp, _ := transportLayer.(*layers.TCP)
 		udp, _ := transportLayer.(*layers.UDP)
-		if tcp == nil || udp == nil {
+		if tcp == nil && udp == nil {
 			continue
 
 			//udp packet
@@ -68,13 +72,15 @@ func doCaptureLoop(packageSource *gopacket.PacketSource) {
 
 			//tcp packet
 		} else if udp == nil {
-			log.Debug("tcp coming")
-			event <- packet.Data()
+//			log.Debug("tcp coming")
+            event <- 1
 			assembler.AssembleWithTimestamp(
 				netLayer.NetworkFlow(),
 				tcp,
 				packet.Metadata().CaptureInfo.Timestamp)
-		}
+		} else {
+            log.Debug("unkown packet type")
+        }
 	}
 
 	//
@@ -84,6 +90,7 @@ func doCaptureLoop(packageSource *gopacket.PacketSource) {
 
 func doEventLoop() {
 	for evt := range event {
-		log.Debug("data: %v", evt)
+        e := evt.(int)
+        e++
 	}
 }
