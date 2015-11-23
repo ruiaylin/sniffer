@@ -47,15 +47,16 @@ func (http Http) New(netFlow, tcpFlow gopacket.Flow) (ret tcpassembly.Stream) {
 
 		//
 		if isUp {
-			httpData.StartRequest()
-			httpData.upStream = NewHttpStream(isUp, httpData.wg)
-			return httpData.upStream;
+			stream := NewHttpRequestStream(httpData.wg);
+			httpData.StartRequest(&stream)
+			ret = stream
 		} else {
-			httpData.StartResponse()
-			httpData.downStream = NewHttpStream(isUp, httpData.wg)
+			stream := NewHttpResponseStream(httpData.wg)
+			httpData.StartResponse(&stream)
 			delete(dataMap, key)
-			return httpData.downStream;
+			ret = stream;
 		}
+		return ret
 	}
 
 	//
