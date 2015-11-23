@@ -13,7 +13,7 @@ import (
 var eachPacketSize int32 = 1024 * 1024
 var log = logger.Logger{"bootstrap"}
 var event chan interface{}
-var ps = [...]protocol.Protocol{http.Http{}}
+var ps = [...]protocol.Protocol{http.NewHttp()}
 
 func Start(device string, bpfExp string) {
 	//

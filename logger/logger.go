@@ -10,7 +10,7 @@ type Logger struct {
 }
 
 func (logger *Logger) Debug(format string, args ... interface{}) {
-	prefix := fmt.Sprintf("%v => ", logger.ClassName)
+	prefix := fmt.Sprintf("%20v => ", logger.ClassName)
 	if len(args) > 0 {
 		fmt.Printf(prefix + format + "\n", args)
 	} else {
