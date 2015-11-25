@@ -45,14 +45,18 @@ func (http Http) New(netFlow, tcpFlow gopacket.Flow) (ret tcpassembly.Stream) {
 			dataMap[key] = httpData
 		}
 
-		//
+		//請求
 		if isUp {
-			httpData.wg.Add(1)
 			stream := NewHttpRequestStream(httpData.wg);
+			httpData.requestStream = stream
 			return &stream.reader
+
+		//响应
 		} else if httpData.requestStream != nil {
-			httpData.wg.Add(1)
 			stream := NewHttpResponseStream(httpData.requestStream, httpData.wg)
+			httpData.responseStream = stream
+
+			//
 			delete(dataMap, key)
 			go httpData.Wait()
 			return &stream.reader

@@ -18,18 +18,19 @@ type HttpResponseStream struct {
 	complete    bool
 }
 
-func NewHttpResponseStream(httpRequest *HttpRequestStream, wg *sync.WaitGroup) HttpResponseStream {
+func NewHttpResponseStream(httpRequest *HttpRequestStream, wg *sync.WaitGroup) *HttpResponseStream {
 	//
 	stream := HttpResponseStream{}
 	stream.reader = tcpreader.NewReaderStream()
 	stream.wg = wg;
 	stream.httpRequest = httpRequest
+	stream.wg.Add(1)
 
 	//
 	go stream.start()
 
 	//
-	return stream
+	return &stream
 }
 
 func (stream HttpResponseStream) start() {
@@ -52,6 +53,7 @@ func (stream HttpResponseStream) start() {
 
 func (stream HttpResponseStream) end() {
 	logHRS.Debug("end response")
+	stream.wg.Done()
 }
 
 
