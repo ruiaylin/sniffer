@@ -13,19 +13,14 @@ type HttpData struct {
 	responseStream *HttpResponseStream
 }
 
-func NewHttpData() HttpData {
+func NewHttpData() *HttpData {
 	data := HttpData{}
 	data.wg = new(sync.WaitGroup)
-	return data
+	return &data
 }
 
-func (data HttpData) StartRequest(s *HttpRequestStream) {
-	data.wg.Add(1)
-	data.requestStream = s
-}
 
 func (data HttpData) StartResponse(s *HttpResponseStream) {
-	data.wg.Add(1)
 	data.responseStream = s
 }
 

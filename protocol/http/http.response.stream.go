@@ -1,42 +1,58 @@
 package http
 import (
-	"github.com/google/gopacket/tcpassembly"
-	"bytes"
 	"sync"
+	"bufio"
+	"net/http"
+	"io"
+	"github.com/google/gopacket/tcpassembly/tcpreader"
+	"github.com/binlaniua/sniffer/logger"
 )
 
+var logHRS2 = logger.Logger{"http.response.stream"}
+
 type HttpResponseStream struct {
-	content *bytes.Buffer
-	header  string
-	body    string
-	wg      *sync.WaitGroup
+	wg          *sync.WaitGroup
+	httpRequest *HttpRequestStream
+	reader      tcpreader.ReaderStream
+	response    *http.Response
+	complete    bool
 }
 
-func NewHttpResponseStream(wg *sync.WaitGroup) HttpResponseStream {
+func NewHttpResponseStream(httpRequest *HttpRequestStream, wg *sync.WaitGroup) HttpResponseStream {
+	//
 	stream := HttpResponseStream{}
-	stream.content = bytes.NewBuffer([]byte(""))
+	stream.reader = tcpreader.NewReaderStream()
 	stream.wg = wg;
+	stream.httpRequest = httpRequest
+
+	//
+	go stream.start()
+
+	//
 	return stream
 }
 
-func (stream HttpResponseStream) Reassembled(rc []tcpassembly.Reassembly) {
-	//
-	for _, packet := range rc {
-		stream.content.Write(packet.Bytes)
+func (stream HttpResponseStream) start() {
+	buf := bufio.NewReader(&stream.reader)
+	for {
+		if request := stream.httpRequest.request; request != nil {
+			res, err := http.ReadResponse(buf, request)
+			if err == io.EOF {
+				logHRS2.Debug("end response eof")
+				stream.response = res
+				stream.end()
+			} else if err != nil {
+				logHRS2.Debug("something error %v", err)
+			} else {
+				logHRS2.Debug("end response complete")
+			}
+		}
 	}
-
-	//	//
-	//	var index int = -1
-	//	var flag = []byte("\r\n\r\n")  //请求头和请求体的分隔符
-	//	index = bytes.Index(stream.content.Bytes(), flag)
-	//	if index != -1 {
-	//		content := string(stream.content.Next(index + len(flag)))
-	//		logHS.Debug(stream.typeStr + " content is " + content)
-	//		stream.wg.Done()
-	//	}
 }
 
-func (stream HttpResponseStream) ReassemblyComplete() {
+func (stream HttpResponseStream) end() {
+	logHRS.Debug("end response")
 }
+
 
 

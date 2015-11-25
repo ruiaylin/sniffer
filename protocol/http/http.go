@@ -8,13 +8,13 @@ import (
 )
 
 var log = logger.Logger{"http.Http"}
-var dataMap map[string]HttpData
+var dataMap map[string]*HttpData
 
 type Http struct {
 }
 
 func NewHttp() Http {
-	dataMap = make(map[string]HttpData)
+	dataMap = make(map[string]*HttpData)
 	return Http{}
 }
 
@@ -27,36 +27,36 @@ func (http Http) New(netFlow, tcpFlow gopacket.Flow) (ret tcpassembly.Stream) {
 	var key string = ""
 	var isUp bool
 	if isSupport(destPort) {
+		log.Debug("分析请求数据")
 		isUp = true
 		key = fmt.Sprintf("%v:%v-%v:%v", netFlow.Src(), tcpFlow.Src(), netFlow.Dst(), tcpFlow.Dst())
 	} else if isSupport(srcPort) {
+		log.Debug("分析响应数据")
 		isUp = false
 		key = fmt.Sprintf("%v:%v-%v:%v", netFlow.Dst(), tcpFlow.Dst(), netFlow.Src(), tcpFlow.Src())
 	}
 
 	//
 	if key != "" {
-		log.Debug("key: %v", key)
 		httpData, ok := dataMap[key]
 		if !ok {
-//			log.Debug("new http data ")
+			log.Debug("key: %v", key)
 			httpData = NewHttpData()
 			dataMap[key] = httpData
-			go httpData.Wait()
 		}
 
 		//
 		if isUp {
+			httpData.wg.Add(1)
 			stream := NewHttpRequestStream(httpData.wg);
-			httpData.StartRequest(&stream)
-			ret = stream
-		} else {
-			stream := NewHttpResponseStream(httpData.wg)
-			httpData.StartResponse(&stream)
+			return &stream.reader
+		} else if httpData.requestStream != nil {
+			httpData.wg.Add(1)
+			stream := NewHttpResponseStream(httpData.requestStream, httpData.wg)
 			delete(dataMap, key)
-			ret = stream;
+			go httpData.Wait()
+			return &stream.reader
 		}
-		return ret
 	}
 
 	//
