@@ -8,7 +8,7 @@ import (
 
 var (
 	device = flag.String("-e", "en0", "")
-	bpfExp = flag.String("-b", "tcp and host 172.19.3.77", "")
+	bpfExp = flag.String("-b", "tcp port 8099", "")
 )
 
 func main() {
@@ -16,5 +16,5 @@ func main() {
 	flag.Parse();
 
 	//
-	bootstrap.Start(*device, *bpfExp);
+	bootstrap.Start(device, bpfExp);
 }

@@ -9,7 +9,6 @@ import (
 var log = logger.Logger{"tcp.datastream.factory"}
 
 type TcpDataStreamFactory struct {
-	Event    chan interface{}
 	Protocol []protocol.Protocol
 }
 

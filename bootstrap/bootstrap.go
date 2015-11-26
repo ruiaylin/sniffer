@@ -8,25 +8,22 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/binlaniua/sniffer/protocol"
 	"github.com/binlaniua/sniffer/protocol/http"
+	"time"
 )
 
 var eachPacketSize int32 = 1024 * 1024
 var log = logger.Logger{"bootstrap"}
-var event chan interface{}
 var ps = [...]protocol.Protocol{http.NewHttp()}
 
-func Start(device string, bpfExp string) {
+func Start(device *string, bpfExp *string) {
 	//
-	event = make(chan interface{}, 1024)
-
-	//
-	handle, err := pcap.OpenLive(device, eachPacketSize, true, pcap.BlockForever)
+	handle, err := pcap.OpenLive(*device, eachPacketSize, true, pcap.BlockForever)
 	if err != nil {
 		log.Error("开启监听失败[%v]", err)
 	}
 
 	//
-	err = handle.SetBPFFilter(bpfExp)
+	err = handle.SetBPFFilter(*bpfExp)
 	if err != nil {
 		log.Error("bpf表达式错误")
 	}
@@ -35,62 +32,44 @@ func Start(device string, bpfExp string) {
 	packageSource := gopacket.NewPacketSource(handle, handle.LinkType())
 
 	//
-	go doCaptureLoop(packageSource)
-
-	//
-	doEventLoop()
+	doCaptureLoop(packageSource)
 }
 
 
 func doCaptureLoop(packageSource *gopacket.PacketSource) {
 	//
-	dataStream := datastream.TcpDataStreamFactory{event, ps[:len(ps)]}
+	dataStream := datastream.TcpDataStreamFactory{ps[:len(ps)]}
 	streamPool := tcpassembly.NewStreamPool(dataStream)
 	assembler := tcpassembly.NewAssembler(streamPool)
 	log.Debug("构建tcp分析者完成")
 
-
+	//
+	packets := packageSource.Packets()
+	ticker := time.Tick(time.Minute)
 
 	//
-	for packet := range packageSource.Packets() {
-		netLayer := packet.NetworkLayer()
-		if netLayer == nil {
-			continue
+	for {
+		select {
+		case packet := <-packets:
+			{
+				if packet == nil {
+					return
+				}
+				if packet.NetworkLayer() == nil || packet.TransportLayer() == nil {
+					continue
+				}
+
+				//tcp
+				if (packet.TransportLayer().LayerType() == layers.LayerTypeTCP) {
+					tcp, _ := packet.TransportLayer().(*layers.TCP)
+					assembler.AssembleWithTimestamp(
+						packet.NetworkLayer().NetworkFlow(),
+						tcp,
+						packet.Metadata().Timestamp)
+				}
+			}
+		case <-ticker:
+			assembler.FlushOlderThan(time.Now().Add(time.Minute * -2))
 		}
-		transportLayer := packet.TransportLayer()
-		if transportLayer == nil {
-			continue
-		}
-		tcp, _ := transportLayer.(*layers.TCP)
-		udp, _ := transportLayer.(*layers.UDP)
-		if tcp == nil && udp == nil {
-			continue
-
-			//udp packet
-		} else if tcp == nil {
-			log.Debug("udp coming, continue")
-
-			//tcp packet
-		} else if udp == nil {
-//			log.Debug("tcp coming")
-            event <- 1
-			assembler.AssembleWithTimestamp(
-				netLayer.NetworkFlow(),
-				tcp,
-				packet.Metadata().CaptureInfo.Timestamp)
-		} else {
-            log.Debug("unkown packet type")
-        }
-	}
-
-	//
-	assembler.FlushAll()
-}
-
-
-func doEventLoop() {
-	for evt := range event {
-        e := evt.(int)
-        e++
 	}
 }

@@ -24,7 +24,6 @@ func NewHttpResponseStream(httpRequest *HttpRequestStream, wg *sync.WaitGroup) *
 	stream.reader = tcpreader.NewReaderStream()
 	stream.wg = wg;
 	stream.httpRequest = httpRequest
-	stream.wg.Add(1)
 
 	//
 	go stream.start()
@@ -34,6 +33,9 @@ func NewHttpResponseStream(httpRequest *HttpRequestStream, wg *sync.WaitGroup) *
 }
 
 func (stream HttpResponseStream) start() {
+	stream.wg.Wait()
+	stream.wg.Add(1)
+
 	buf := bufio.NewReader(&stream.reader)
 	for {
 		if request := stream.httpRequest.request; request != nil {

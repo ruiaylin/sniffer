@@ -24,6 +24,9 @@ func (http Http) New(netFlow, tcpFlow gopacket.Flow) (ret tcpassembly.Stream) {
 	srcPort, _ := strconv.Atoi(fmt.Sprintf("%v", tcpFlow.Src()))
 
 	//
+	log.Debug("有数据包来了")
+
+	//
 	var key string = ""
 	var isUp bool
 	if isSupport(destPort) {

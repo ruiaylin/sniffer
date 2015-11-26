@@ -25,7 +25,7 @@ func (data HttpData) StartResponse(s *HttpResponseStream) {
 }
 
 func (data HttpData) Wait() {
-	logHD.Debug("等待數據傳輸完成")
-	data.wg.Wait()
-	logHD.Debug("數據傳輸完成")
+//	logHD.Debug("等待數據傳輸完成")
+//	data.wg.Wait()
+//	logHD.Debug("數據傳輸完成")
 }
