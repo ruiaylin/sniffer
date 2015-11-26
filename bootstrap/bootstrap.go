@@ -13,7 +13,7 @@ import (
 	"github.com/binlaniua/sniffer/protocol/mysql"
 )
 
-var eachPacketSize int32 = 1024 * 1024
+var eachPacketSize int32 = 1024
 var log = logger.Logger{"bootstrap"}
 var ps = [...]protocol.Protocol{http.NewHttp(), oracle.NewOracle(), mysql.NewMySql()}
 

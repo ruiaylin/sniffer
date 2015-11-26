@@ -22,8 +22,11 @@ func NewOracleStream() *OracleStream {
 
 func (stream *OracleStream) Reassembled(reassembly []tcpassembly.Reassembly) {
 	for _, r := range reassembly {
-		stream.content.Write(r.Bytes)
-		logOS.Debug(stream.content.String())
+
+		//
+		logOS.Debug("数据来临:" + string(r.Bytes))
+		//		stream.content.Write(r.Bytes)
+		//		logOS.Debug(stream.content.String())
 	}
 }
 
