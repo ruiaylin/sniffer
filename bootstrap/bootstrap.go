@@ -9,11 +9,13 @@ import (
 	"github.com/binlaniua/sniffer/protocol"
 	"github.com/binlaniua/sniffer/protocol/http"
 	"time"
+	"github.com/binlaniua/sniffer/protocol/oracle"
+	"github.com/binlaniua/sniffer/protocol/mysql"
 )
 
 var eachPacketSize int32 = 1024 * 1024
 var log = logger.Logger{"bootstrap"}
-var ps = [...]protocol.Protocol{http.NewHttp()}
+var ps = [...]protocol.Protocol{http.NewHttp(), oracle.NewOracle(), mysql.NewMySql()}
 
 func Start(device *string, bpfExp *string) {
 	//

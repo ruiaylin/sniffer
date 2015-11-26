@@ -8,7 +8,7 @@ import (
 
 var (
 	device = flag.String("-e", "en0", "")
-	bpfExp = flag.String("-b", "tcp port 8099", "")
+	bpfExp = flag.String("-b", "tcp port 3306", "")
 )
 
 func main() {
