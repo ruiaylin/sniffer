@@ -7,6 +7,7 @@ import (
 	"io"
 	"github.com/google/gopacket/tcpassembly/tcpreader"
 	"fmt"
+	"log"
 )
 
 var logHRS = logger.Logger{"http.request.stream"}
@@ -54,7 +55,9 @@ func (stream HttpRequestStream) start() {
 		} else {
 			logHRS.Debug("请求数据获取完成")
 			stream.request = req
+			bodyBytes := tcpreader.DiscardBytesToEOF(req.Body)
 			req.Body.Close()
+			log.Println("Received request from stream:", req, "with", bodyBytes, "bytes in request body")
 		}
 	}
 }

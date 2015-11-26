@@ -33,7 +33,12 @@ func NewHttpResponseStream(httpRequest *HttpRequestStream, wg *sync.WaitGroup) *
 }
 
 func (stream HttpResponseStream) start() {
+	//
+	logHRS2.Debug("等待请求获取完毕")
 	stream.wg.Wait()
+	logHRS2.Debug("请求获取完毕, 开始获取影响数据")
+
+	//
 	stream.wg.Add(1)
 
 	buf := bufio.NewReader(&stream.reader)
